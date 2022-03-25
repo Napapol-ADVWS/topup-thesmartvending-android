@@ -1,0 +1,69 @@
+<resources>
+    <string name="app_name">YYSerialPortSample</string>
+
+
+    <string name="create_hint">根据对接文档请优先使用ttyS4进行测试</string>
+    <string name="create_serialport">①创建串口对象</string>
+    <string name="select_init_serialport_path">选择初始化串口路径：</string>
+    <string name="machine">设备：</string>
+    <string name="aisle_row">货道-行：</string>
+    <string name="aisle_column">货道-列：</string>
+    <string name="aisle_type">货道类型：</string>
+    <string name="open_repetition_deliver">开启重复出货</string>
+    <string name="query_machine">②查询机器</string>
+    <string name="deliver_operation">③出货操作</string>
+    <string name="clear_seq">清除seq</string>
+    <string name="clear_task">清空任务</string>
+    <string name="into_wrapper_class">进入封装类</string>
+    <string name="batch_test">批量测试</string>
+    <string name="max_test_rows">最大测试行：</string>
+    <string name="max_test_column">最大测试列：</string>
+    <string name="start_test">开始测试</string>
+    <string name="open_repetition_test">开启重复测试</string>
+    <string name="go_back">返回</string>
+    <string name="light_brightness">灯条亮度</string>
+    <string name="submit">提交</string>
+    <string name="setting_lift_machine_storey">设置升降机层高</string>
+    <string name="query_all">查询所有</string>
+    <string name="reset_storey">重置层高</string>
+    <string name="number_of_plies">层数</string>
+    <string name="storey_height">层高</string>
+    <string name="setting_single_storey">设置单层层高</string>
+
+
+    <string-array name="serialport_path">
+        <item>ttyS0</item>
+        <item>ttyS1</item>
+        <item>ttyS2</item>
+        <item>ttyS4</item>
+    </string-array>
+
+    <string-array name="serialport_path_value">
+        <item>/dev/ttyS0</item>
+        <item>/dev/ttyS1</item>
+        <item>/dev/ttyS2</item>
+        <item>/dev/ttyS4</item>
+    </string-array>
+
+
+    <string-array name="aisle_type">
+        <item>弹簧货道</item>
+        <item>格子柜</item>
+        <item>升降机-弹簧货道</item>
+        <item>升降机-履带</item>s
+        <item>履带</item>
+        <item>升降机-无按压履带</item>
+
+    </string-array>
+
+    <integer-array name="aisle_val">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+    </integer-array>
+
+
+</resources>

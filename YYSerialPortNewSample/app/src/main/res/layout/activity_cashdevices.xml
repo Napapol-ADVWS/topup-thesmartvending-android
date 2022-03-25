@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <Spinner
+        android:id="@+id/sp_path"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:entries="@array/serialport_path"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent"></Spinner>
+
+    <Spinner
+        android:id="@+id/sp_baudrate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:entries="@array/serialport_baudrate"
+        app:layout_constraintBottom_toBottomOf="@+id/sp_path"
+        app:layout_constraintLeft_toRightOf="@+id/sp_path"
+        app:layout_constraintTop_toTopOf="@+id/sp_path"></Spinner>
+
+    <Button
+        android:id="@+id/button3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onClickCreate"
+        android:text="create"
+        app:layout_constraintBottom_toBottomOf="@+id/sp_path"
+        app:layout_constraintLeft_toRightOf="@+id/sp_baudrate"
+        app:layout_constraintTop_toTopOf="@+id/sp_path" />
+
+
+    <EditText
+        android:id="@+id/edt_money"
+        android:layout_width="85dp"
+        android:layout_height="55dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_customer_money"></EditText>
+
+
+    <Button
+        android:id="@+id/btn_received"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:onClick="onClickReceiveMoney"
+        android:text="received"
+        app:layout_constraintBottom_toBottomOf="@+id/edt_money"
+        app:layout_constraintStart_toEndOf="@+id/edt_money"
+        app:layout_constraintTop_toTopOf="@+id/edt_money"></Button>
+
+
+    <Button
+        android:id="@+id/button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:onClick="onClickRefundMoney"
+        android:text="refund"
+        app:layout_constraintStart_toEndOf="@+id/btn_received"
+        app:layout_constraintTop_toTopOf="@+id/btn_received" />
+
+
+    <ScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/edt_money">
+
+        <TextView
+            android:id="@+id/tv_log"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp" />
+    </ScrollView>
+
+    <Button
+        android:id="@+id/button4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onClickCompleteTransaction"
+        android:text="complete transaction"
+        app:layout_constraintStart_toEndOf="@+id/button"
+        app:layout_constraintTop_toTopOf="@+id/button" />
+
+    <TextView
+        android:id="@+id/tv_customer_money"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/sp_path" />
+
+
+</android.support.constraint.ConstraintLayout>

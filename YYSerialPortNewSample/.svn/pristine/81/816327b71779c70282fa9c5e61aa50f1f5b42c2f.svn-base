@@ -1,0 +1,182 @@
+package com.lomoment.serialportsample;
+
+import android.content.Context;
+import android.util.Log;
+
+import com.lomoment.serialportsdk.GBCode;
+import com.lomoment.serialportsdk.GBSerialPort;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * @author libin
+ * @date 2018/5/22
+ * @Description single chip manager
+ */
+
+public class SingleChipManager implements GBSerialPort.SerialPortResponseListener, GBSerialPort.MachineQueryResponseListener {
+    public static final String TAG = SingleChipManager.class.getSimpleName();
+    //serial port pa
+    public static final String SERICAL_PORT_PATH = "/dev/ttyS4";
+
+    public static final int BAUDRATE = 115200;
+
+    private static SingleChipManager mInstance;
+    private GBSerialPort serialPort;
+
+    private Map<String, DeliverInfo> sendReq;
+
+    public DeliverDiSposeListener deliverDiSposeListener;
+
+    private SingleChipManager() {
+        sendReq = new HashMap<>();
+    }
+
+    public static SingleChipManager getInstance() {
+        if (mInstance == null) {
+            synchronized (SingleChipManager.class) {
+                if (mInstance == null) {
+                    mInstance = new SingleChipManager();
+                }
+            }
+        }
+        return mInstance;
+    }
+
+    /**
+     * init serial port
+     *
+     * @param context
+     */
+    public void init(Context context) {
+        init(context, SERICAL_PORT_PATH, BAUDRATE);
+    }
+
+
+    public void init(Context context, String path, int baudrate) {
+        if (serialPort != null) {
+            serialPort.recycle();
+        }
+        serialPort = new GBSerialPort(context);
+        //open log
+        serialPort.setShowLog(true);
+        //set serial port  path
+        serialPort.init(path, baudrate);
+        //set deliver listener
+        serialPort.setSerialPortResponseListener(this);
+        //set query machine listener
+        serialPort.setMachineQueryResponseListener(this);
+    }
+
+    /**
+     * deliver invoke
+     *
+     * @param mcuid    machine number   mcuid
+     * @param opration operation code
+     * @param result   status code
+     * @param seq
+     * @param vals
+     */
+    @Override
+    public void response(String mcuid, int opration, int result, String seq, int... vals) {
+        if (sendReq.containsKey(seq)) {
+            if (opration == GBCode.OP_COMMAND_DELIVERY) {
+                DeliverInfo deliverInfo = sendReq.remove(seq);
+                if (deliverDiSposeListener != null) {
+                    deliverDiSposeListener.deliverListener(deliverInfo, seq, result, vals[0], vals[1], vals[2]);
+                }
+            }
+        } else {
+            Log.d(TAG, "unknown : " + seq);
+        }
+
+    }
+
+    /**
+     * query machine call back
+     *
+     * @param map key machineNumber
+     *            values  route port
+     */
+    @Override
+    public void queryListener(Map<String, Byte> map) {
+        Log.d(TAG, "current machine ：" + map.toString());
+
+        if (deliverDiSposeListener != null) {
+            deliverDiSposeListener.queryMachine(map);
+        }
+
+    }
+
+    /**
+     * query machine operation
+     */
+    public void sendQueryMachineMsg() {
+        if (serialPort != null) {
+            serialPort.sendQueryMachineMsg();
+        }
+    }
+
+    /**
+     * clear execute task
+     */
+    public void cleatTask() {
+        if (serialPort != null) {
+            serialPort.clearTask();
+        }
+    }
+
+
+    /**
+     * @param t business object
+     */
+    public <T extends DeliverInfo> void sendDeliverMsg(T t) {
+        if (serialPort != null) {
+            sendReq.put(serialPort.sendDeliveryPacketMsg(t.machine, t.x, t.y), t);
+        }
+    }
+
+    /**
+     * clear single clip  seq
+     */
+    public void sendClearAllSeqMsg() {
+        if (serialPort != null) {
+            serialPort.sendClearAllSeqMsg();
+        }
+    }
+
+    public void recycle() {
+        if (serialPort != null) {
+            serialPort.recycle();
+        }
+    }
+
+
+    public byte getMachinePortByNumber(String s) {
+        return serialPort.getMachinePortByNumber(s);
+    }
+
+    public boolean isExistMachineNumber(String s) {
+        return serialPort.isExistMachineNumber(s);
+    }
+
+    public int getMachineVersionByNumber(String s) {
+        return serialPort.getMachineVersionByNumber(s);
+    }
+
+    /**
+     * custom deliver listener
+     */
+    public interface DeliverDiSposeListener {
+        public void deliverListener(DeliverInfo deliverInfo, String seq, int result, int appendState, int x, int y);
+
+        public void queryMachine(Map<String, Byte> map);
+    }
+
+    public void setDeliverDiSposeListener(DeliverDiSposeListener deliverDiSposeListener) {
+        this.deliverDiSposeListener = deliverDiSposeListener;
+    }
+
+
+}

@@ -1,0 +1,238 @@
+package com.lomoment.serialportsample;
+
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
+import android.util.Log;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.lomoment.serialportsdk.GBCode;
+import com.lomoment.serialportsdk.GBKeys;
+import com.lomoment.serialportsdk.GBSerialPort;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * 封装串口示例类
+ */
+public class MainTwoActivity extends AppCompatActivity implements SingleChipManager.DeliverDiSposeListener {
+
+    private EditText etx;
+    private EditText ety;
+    private TextView tvContent;
+
+    private SingleChipManager singleChipManager;
+    private Spinner spinner;
+    private Map<String, Byte> shelfMap = new HashMap<>();
+    private List<String> mcuidList = new ArrayList<>();
+    private CheckBox checkbox;
+
+    private ResutCountUtils resutCountUtils = new ResutCountUtils();
+    private TextView tvCount;
+
+    private DateUtils timeFormat = new DateUtils();
+    private Spinner spSerialport;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main_two);
+        initView();
+        tvCount = (TextView) findViewById(R.id.tv_count);
+    }
+
+    private void initView() {
+        spinner = (Spinner) findViewById(R.id.spinner);
+        etx = (EditText) findViewById(R.id.et_x);
+        ety = (EditText) findViewById(R.id.et_y);
+        tvContent = (TextView) findViewById(R.id.tv_content);
+        checkbox = (CheckBox) findViewById(R.id.checkbox);
+        spSerialport = (Spinner) findViewById(R.id.sp_serialport);
+        spSerialport.setSelection(0, true);
+    }
+
+    /**
+     * 进行出货调用时需要先调用机器查询方法并确保已查询到机器，否则发送出货会返回出货失败，补充码为3003.——机器不存在
+     */
+    public void onClickSendMsg(View view) {
+        sendDelivery();
+    }
+
+    private void sendDelivery() {
+        if (singleChipManager == null) {
+            Toast.makeText(this, "串口对象未创建", Toast.LENGTH_LONG).show();
+            return;
+        }
+        String machine = null;
+        if (spinner.getSelectedItem() != null) {
+            machine = spinner.getSelectedItem().toString();
+        }
+        if (TextUtils.isEmpty(machine)) {
+            Toast.makeText(this, "没有可测试设备", Toast.LENGTH_LONG).show();
+            return;
+        }
+        //截取机器编号——机器显示做了额外的数据添加（主副柜、单片机版本）
+        DeliverInfo deliverInfo = new DeliverInfo(machine.split(GBSerialPort.SEPARATOR)[1], Integer.parseInt(etx.getText().toString()), Integer.parseInt(ety.getText().toString()));
+        singleChipManager.sendDeliverMsg(deliverInfo);
+    }
+
+    public void onClickQueryMachine(View view) {
+        if (singleChipManager == null) {
+            Toast.makeText(this, "串口对象未创建", Toast.LENGTH_LONG).show();
+            return;
+        }
+        singleChipManager.sendQueryMachineMsg();
+    }
+
+
+    public void onClickClearSeq(View view) {
+        if (singleChipManager == null) {
+            Toast.makeText(this, "串口对象未创建", Toast.LENGTH_LONG).show();
+            return;
+        }
+        singleChipManager.sendClearAllSeqMsg();
+    }
+
+    public void onClickBack(View view) {
+        onBackPressed();
+    }
+
+    /**
+     * 因 {@link MainActivity} 使用了同一个串口路径，所以在返回时需要回收当前单例
+     */
+    @Override
+    protected void onPause() {
+        super.onPause();
+        recycleSerialPort();
+        if (spinner != null && spinner.getAdapter() != null) {
+            mcuidList.clear();
+            ((ArrayAdapter) spinner.getAdapter()).notifyDataSetChanged();
+        }
+    }
+
+    @Override
+    public void deliverListener(DeliverInfo deliverInfo, String seq, int result, int appendState, int x, int y) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(timeFormat.getTime());
+        sb.append("\t机器：" + deliverInfo.machine + "\t" + "seq：" + seq);
+        sb.append("\t货道：行：" + x + "\t列：" + y);
+        sb.append("\t出货结果：");
+        if (result == GBCode.STATE_SUCCESS) {
+            if (appendState == GBCode.DELIVER_EMBODY_SUCCESS) {
+                sb.append("出货成功!");
+            } else {
+                sb.append("出货成功!\t补充码：" + appendState);
+            }
+        } else if (result == GBCode.STATE_FAIL) {
+            sb.append("出货失败!\t补充码：" + appendState);
+        }
+        sb.append("\n");
+        final String msg = sb.toString();
+        String str = tvContent.getText().toString();
+        tvContent.setText(msg);
+        tvContent.append(str);
+        //是否需要重复发送
+        if (checkbox.isChecked()) {
+            sendDelivery();
+        }
+        //记录发送结果
+        resutCountUtils.countResult(appendState + "");
+        //输出打印结果
+        tvCount.setText("统计：\n" + resutCountUtils.toString().replaceAll(",", "\n").replaceAll("\\{|\\}", ""));
+
+    }
+
+    @Override
+    public void queryMachine(Map<String, Byte> map) {
+        shelfMap.clear();
+        shelfMap.putAll(map);
+        Set<String> set = shelfMap.keySet();
+        if (set.size() > 0) {
+            initSpinnerAdapter();
+        } else {
+            Toast.makeText(this, "未查询到机器", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void initSpinnerAdapter() {
+        //进行主副柜数据显示
+        mcuidList.clear();
+        for (String mcuid : shelfMap.keySet()) {
+            String name = "";
+            //查询
+            if (singleChipManager != null && singleChipManager.isExistMachineNumber(mcuid)) {
+                byte port = singleChipManager.getMachinePortByNumber(mcuid);
+                if (port == GBKeys.MACHINE_ROUTE_MIDDLE) {
+                    name = "主柜";
+                } else if (port == GBKeys.MACHINE_ROUTE_LEFT) {
+                    name = "副柜C";
+                } else if (port == GBKeys.MACHINE_ROUTE_RIGHT) {
+                    name = "副柜A";
+                }
+            } else {
+                name = "未知";
+            }
+            name = name + GBSerialPort.SEPARATOR + mcuid + GBSerialPort.SEPARATOR + singleChipManager.getMachineVersionByNumber(mcuid);
+            mcuidList.add(name);
+        }
+        if (mcuidList.size() > 0) {
+            Collections.sort(mcuidList, new Comparator<String>() {
+                @Override
+                public int compare(String o1, String o2) {
+                    return o1.compareTo(o2);
+                }
+            });
+        }
+
+        ArrayAdapter arrayAdapter = new ArrayAdapter(this, R.layout.item_shelf_spinner, mcuidList);
+        spinner.setAdapter(arrayAdapter);
+    }
+
+    public void onClickClearTask(View view) {
+        if (singleChipManager == null) {
+            Toast.makeText(this, "串口对象未创建", Toast.LENGTH_LONG).show();
+            return;
+        }
+        singleChipManager.cleatTask();
+    }
+
+    public void onClickCreateSerialPort(View view) {
+        recycleSerialPort();
+        createSerialPort();
+    }
+
+    private void createSerialPort() {
+        String path = getResources().getStringArray(R.array.serialport_path_value)[spSerialport.getSelectedItemPosition()];
+        Log.d("tag", "获取路径" + path);
+        File file = new File(path);
+        if (!file.exists()) {
+            Toast.makeText(this, "串口路径不存在", Toast.LENGTH_LONG).show();
+            return;
+        }
+        singleChipManager = SingleChipManager.getInstance();
+        singleChipManager.init(this);
+        singleChipManager.setDeliverDiSposeListener(this);
+    }
+
+    /**
+     * 回收串口对象
+     */
+    private void recycleSerialPort() {
+        if (singleChipManager != null) {
+            singleChipManager.recycle();
+        }
+    }
+}

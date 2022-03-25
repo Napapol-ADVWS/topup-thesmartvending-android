@@ -1,0 +1,227 @@
+package com.lomoment.serialportsample;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
+import android.util.Log;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.lomoment.serialportsdk.GBCode;
+import com.lomoment.serialportsdk.GBKeys;
+import com.lomoment.serialportsdk.GBSerialPort;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static com.lomoment.serialportsample.SingleChipManager.BAUDRATE;
+import static com.lomoment.serialportsample.SingleChipManager.SERICAL_PORT_PATH;
+
+/**
+ * 直接使用串口示例类
+ * 由于{@link MainActivity} {@link MainTwoActivity} 中使用了同一个串口对象{@link SingleChipManager#SERICAL_PORT_PATH} ，所以在切换类的时候需要进行回收，避免串口数据误读
+ */
+public class MainActivity extends AppCompatActivity {
+
+    private EditText etx;
+    private EditText ety;
+    private TextView tvContent;
+
+    //obj对象为订单相关信息，在回调时通过seq获取obj并进行处理
+    private Map<String, Object> requestMap = new HashMap<>();
+    private GBSerialPort gbSerialPort;
+    private Map<String, Byte> shelfMap = new HashMap<>();
+    private Spinner spinner;
+    private List<String> mcuidList = new ArrayList<>();
+    private CheckBox checkbox;
+
+    private ResutCountUtils resutCountUtils = new ResutCountUtils();
+    private TextView tvCount;
+
+    private DateUtils timeFormat = new DateUtils();
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        etx = (EditText) findViewById(R.id.et_x);
+        ety = (EditText) findViewById(R.id.et_y);
+        tvContent = (TextView) findViewById(R.id.tv_content);
+        spinner = (Spinner) findViewById(R.id.spinner);
+        checkbox = (CheckBox) findViewById(R.id.checkbox);
+        tvCount = (TextView) findViewById(R.id.tv_count);
+
+    }
+
+    private void createSerialPort() {
+        gbSerialPort = new GBSerialPort(this);
+        //初始化串口路径与波特率
+        gbSerialPort.init(SERICAL_PORT_PATH, BAUDRATE);
+        //打印log
+        gbSerialPort.setShowLog(true);
+        gbSerialPort.setSerialPortResponseListener(new GBSerialPort.SerialPortResponseListener() {
+            @Override
+            public void response(String machine, int opration, int result, String seq, int[] args) {
+                if (requestMap.containsKey(seq)) {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(timeFormat.getTime());
+                    sb.append("\t机器：" + machine + "\t" + "seq：" + seq);
+                    if (opration == GBCode.OP_COMMAND_DELIVERY) {
+                        sb.append("\t货道：行：" + args[1] + "\t列：" + args[2]);
+                        sb.append("\t出货结果：");
+                        if (result == GBCode.STATE_SUCCESS) {
+                            if (args[0] == GBCode.DELIVER_EMBODY_SUCCESS) {
+                                sb.append("出货成功!");
+                            } else {
+                                sb.append("出货成功!\t补充码：" + args[0]);
+                            }
+                        } else if (result == GBCode.STATE_FAIL) {
+                            sb.append("出货失败!\t补充码：" + args[0]);
+                        }
+                    }
+                    sb.append("\n");
+                    final String msg = sb.toString();
+                    String str = tvContent.getText().toString();
+                    tvContent.setText(msg);
+                    tvContent.append(str);
+                    requestMap.remove(seq);
+                    //是否需要重复发送
+                    if (checkbox.isChecked()) {
+                        sendDelivery();
+                    }
+                    //记录发送结果
+                    resutCountUtils.countResult(args[0] + "");
+                    //输出打印结果
+                    tvCount.setText("统计：\n" + resutCountUtils.toString().replaceAll(",", "\n").replaceAll("\\{|\\}", ""));
+
+                }
+
+            }
+        });
+
+        gbSerialPort.setMachineQueryResponseListener(new GBSerialPort.MachineQueryResponseListener() {
+            @Override
+            public void queryListener(Map<String, Byte> map) {
+                shelfMap.clear();
+                shelfMap.putAll(map);
+                Log.d("TAG", "机器列表 " + map);
+                Set<String> set = shelfMap.keySet();
+                if (set.size() > 0) {
+                    initSpinnerAdapter();
+                } else {
+                    Toast.makeText(MainActivity.this, "未查询到机器", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+    }
+
+    private void initSpinnerAdapter() {
+        //进行主副柜数据显示
+        mcuidList.clear();
+        for (String mcuid : shelfMap.keySet()) {
+            String name = "";
+            //查询
+            if (gbSerialPort != null && gbSerialPort.isExistMachineNumber(mcuid)) {
+                byte port = gbSerialPort.getMachinePortByNumber(mcuid);
+                if (port == GBKeys.MACHINE_ROUTE_MIDDLE) {
+                    name = "主柜";
+                } else if (port == GBKeys.MACHINE_ROUTE_LEFT) {
+                    name = "副柜C";
+                } else if (port == GBKeys.MACHINE_ROUTE_RIGHT) {
+                    name = "副柜A";
+                }
+            } else {
+                name = "未知";
+            }
+            //为了方便查看主副柜而添加的，在实际使用中无需添加
+            name = name + GBSerialPort.SEPARATOR + mcuid + GBSerialPort.SEPARATOR + gbSerialPort.getMachineVersionByNumber(mcuid);
+            mcuidList.add(name);
+        }
+        if (mcuidList.size() > 0) {
+            Collections.sort(mcuidList, new Comparator<String>() {
+                @Override
+                public int compare(String o1, String o2) {
+                    return o1.compareTo(o2);
+                }
+            });
+        }
+        ArrayAdapter arrayAdapter = new ArrayAdapter(this, R.layout.item_shelf_spinner, mcuidList);
+        spinner.setAdapter(arrayAdapter);
+    }
+
+    /**
+     * 进行出货调用时需要先调用机器查询方法并确保已查询到机器，否则发送出货会返回出货失败，补充码为3003.——机器不存在
+     */
+    public void onClickSendMsg(View view) {
+        sendDelivery();
+    }
+
+    private void sendDelivery() {
+        String machine = null;
+        if (spinner.getSelectedItem() != null) {
+            machine = spinner.getSelectedItem().toString();
+        }
+        if (TextUtils.isEmpty(machine)) {
+            Toast.makeText(this, "没有可测试设备", Toast.LENGTH_LONG).show();
+            return;
+        }
+        //截取机器编号——机器显示做了额外的数据添加（主副柜、单片机版本）
+        String seq = gbSerialPort.sendDeliveryPacketMsg(machine.split(GBSerialPort.SEPARATOR)[1], Integer.parseInt(etx.getText().toString()), Integer.parseInt(ety.getText().toString()));
+        //保存seq值,Object为业务对象
+        requestMap.put(seq, new Object());
+    }
+
+    public void onClickQueryMachine(View view) {
+        gbSerialPort.sendQueryMachineMsg();
+    }
+
+    public void onClickClearSeq(View view) {
+        gbSerialPort.sendClearAllSeqMsg();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //创建串口类
+        createSerialPort();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (gbSerialPort != null) {
+            gbSerialPort.recycle();
+        }
+        if (spinner != null && spinner.getAdapter() != null) {
+            mcuidList.clear();
+            ((ArrayAdapter) spinner.getAdapter()).notifyDataSetChanged();
+        }
+    }
+
+    public void onClickEncapsulationClass(View view) {
+        startActivity(new Intent(this, MainTwoActivity.class));
+    }
+
+    public void onClickClearTask(View view) {
+        gbSerialPort.clearTask();
+        requestMap.clear();
+    }
+
+
+}

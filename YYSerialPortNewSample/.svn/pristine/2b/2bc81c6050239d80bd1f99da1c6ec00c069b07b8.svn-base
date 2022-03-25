@@ -1,0 +1,40 @@
+<resources>
+    <string name="app_name">YYSerialPortSample</string>
+
+
+    <string name="create_hint">根据对接文档请优先使用ttyS4进行测试</string>
+    <string name="create_serialport">创建串口对象</string>
+    <string name="select_init_serialport_path">选择初始化串口路径：</string>
+    <string name="machine">设备：</string>
+    <string name="aisle_row">货道-行：</string>
+    <string name="aisle_column">货道-列：</string>
+    <string name="open_repetition_deliver">开启重复出货</string>
+    <string name="query_machine">查询机器</string>
+    <string name="deliver_operation">出货操作</string>
+    <string name="clear_seq">清除seq</string>
+    <string name="clear_task">清空任务</string>
+    <string name="into_wrapper_class">进入封装类</string>
+    <string name="batch_test">批量测试</string>
+    <string name="max_test_rows">最大测试行：</string>
+    <string name="max_test_column">最大测试列：</string>
+    <string name="start_test">开始测试</string>
+    <string name="open_repetition_test">开启重复测试</string>
+    <string name="go_back">返回</string>
+
+
+    <string-array name="serialport_path">
+        <item>ttyS0</item>
+        <item>ttyS1</item>
+        <item>ttyS2</item>
+        <item>ttyS4</item>
+    </string-array>
+
+    <string-array name="serialport_path_value">
+        <item>/dev/ttyS0</item>
+        <item>/dev/ttyS1</item>
+        <item>/dev/ttyS2</item>
+        <item>/dev/ttyS4</item>
+    </string-array>
+
+
+</resources>

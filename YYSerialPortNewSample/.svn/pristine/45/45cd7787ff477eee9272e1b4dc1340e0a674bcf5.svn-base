@@ -1,0 +1,86 @@
+<resources>
+    <string name="app_name">YYSerialPortSample</string>
+
+
+    <string name="create_hint">根据对接文档请优先使用ttyS4进行测试</string>
+    <string name="create_serialport">①创建串口对象</string>
+    <string name="select_init_serialport_path">选择初始化串口路径：</string>
+    <string name="machine">设备：</string>
+    <string name="aisle_row">货道-行：</string>
+    <string name="aisle_column">货道-列：</string>
+    <string name="aisle_type">货道类型：</string>
+    <string name="open_repetition_deliver">开启重复出货</string>
+    <string name="query_machine">②查询机器</string>
+    <string name="deliver_operation">③出货操作</string>
+    <string name="clear_seq">清除seq</string>
+    <string name="clear_task">清空任务</string>
+    <string name="into_wrapper_class">进入封装类</string>
+    <string name="batch_test">批量测试</string>
+    <string name="max_test_rows">最大测试行：</string>
+    <string name="max_test_column">最大测试列：</string>
+    <string name="start_test">开始测试</string>
+    <string name="open_repetition_test">开启重复测试</string>
+    <string name="go_back">返回</string>
+    <string name="light_brightness">灯条亮度</string>
+    <string name="submit">提交</string>
+    <string name="setting_lift_machine_storey">设置升降机层高</string>
+    <string name="query_all">查询所有</string>
+    <string name="reset_storey">重置层高</string>
+    <string name="number_of_plies">层数</string>
+    <string name="storey_height">层高</string>
+    <string name="setting_single_storey">设置单层层高</string>
+    <string name="operation_success">操作成功</string>
+    <string name="operation_fail">操作失败</string>
+    <string name="machine_main">主柜</string>
+    <string name="affiliate_machine_A">副柜A</string>
+    <string name="affiliate_machine_C">副柜C</string>
+    <string name="unknown">未知</string>
+    <string name="not_found_machine">未查询到机器</string>
+    <string name="deliver_success">出货成功</string>
+    <string name="explain_code">补充码</string>
+    <string name="deliver_fail">出货失败</string>
+    <string name="aisle">货道</string>
+    <string name="not_found_serial_path">串口路径不存在</string>
+    <string name="statistics">统计</string>
+    <string name="create_serial_port_operation_obj_please">请先创建串口操作对象</string>
+    <string name="input_value_cannot_be_greater_than">输入数值不能大于%d</string>
+    <string name="please_enter_values_from_some_to_some" formatted="false">请输入%d至%d之间的数值</string>
+    <string name="number_of_layers_cannot_be_empty">层数不能为空</string>
+
+
+    <string-array name="serialport_path">
+        <item>ttyS0</item>
+        <item>ttyS1</item>
+        <item>ttyS2</item>
+        <item>ttyS4</item>
+    </string-array>
+
+    <string-array name="serialport_path_value">
+        <item>/dev/ttyS0</item>
+        <item>/dev/ttyS1</item>
+        <item>/dev/ttyS2</item>
+        <item>/dev/ttyS4</item>
+    </string-array>
+
+
+    <string-array name="aisle_type">
+        <item>弹簧货道</item>
+        <item>格子柜</item>
+        <item>升降机-弹簧货道</item>
+        <item>升降机-履带</item>s
+        <item>履带</item>
+        <item>升降机-无按压履带</item>
+
+    </string-array>
+
+    <integer-array name="aisle_val">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+    </integer-array>
+
+
+</resources>

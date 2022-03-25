@@ -1,0 +1,166 @@
+package com.lomoment.serialportsample;
+
+import android.content.Context;
+import android.util.Log;
+
+import com.lomoment.serialportsdk.GBCode;
+import com.lomoment.serialportsdk.GBSeqGenerate;
+import com.lomoment.serialportsdk.GBSerialPort;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * @author libin
+ * @date 2018/5/22
+ * @Description 单片机管理
+ */
+
+public class SingleChipManager implements GBSerialPort.SerialPortResponseListener, GBSerialPort.MachineQueryResponseListener {
+
+
+    public static final String TAG = SingleChipManager.class.getSimpleName();
+
+    //串口路径
+    public static final String SERICAL_PORT_PATH = "/dev/ttyS0";
+    //波特率
+    public static final int BAUDRATE = 115200;
+
+    private static SingleChipManager mInstance;
+    private GBSerialPort serialPort;
+
+    private Map<String, DeliverInfo> sendReq;
+
+    public DeliverDiSposeListener deliverDiSposeListener;
+
+
+    private SingleChipManager() {
+        sendReq = new HashMap<>();
+    }
+
+    public static SingleChipManager getInstance() {
+        if (mInstance == null) {
+            synchronized (SingleChipManager.class) {
+                if (mInstance == null) {
+                    mInstance = new SingleChipManager();
+                }
+            }
+        }
+        return mInstance;
+    }
+
+    public void init(Context context) {
+        //初始化seq
+        GBSeqGenerate.getInstance().init(context);
+        if (serialPort != null) {
+            serialPort.recycle();
+        }
+        serialPort = new GBSerialPort(context);
+        //开启日志
+        serialPort.setShowLog(true);
+        serialPort.init(SERICAL_PORT_PATH, BAUDRATE);
+        serialPort.setSerialPortResponseListener(this);
+        serialPort.setMachineQueryResponseListener(this);
+    }
+
+    /**
+     * @param mcuid    机器mcuid
+     * @param opration 操作指令
+     * @param result   返回结果
+     * @param seq      指令序列号
+     * @param vals     参数
+     */
+    @Override
+    public void response(String mcuid, int opration, int result, String seq, int... vals) {
+        if (sendReq.containsKey(seq)) {
+            if (opration == GBCode.OP_COMMAND_DELIVERY) {
+                //删除已处理seq
+                DeliverInfo deliverInfo = sendReq.remove(seq);
+                if (deliverDiSposeListener != null) {
+                    deliverDiSposeListener.deliverListener(deliverInfo, seq, result, vals[0], vals[1], vals[2]);
+                }
+            }
+        } else {
+            Log.d(TAG, "未知seq : " + seq);
+        }
+
+    }
+
+    /**
+     * @param map 当前机器 String  机器mcuid,byte 机器路由端口
+     *            端口：
+     */
+    @Override
+    public void queryListener(Map<String, Byte> map) {
+        Log.d(TAG, "当前机器：" + map.toString());
+
+        if (deliverDiSposeListener != null) {
+            deliverDiSposeListener.queryMachine(map);
+        }
+
+    }
+
+    public void sendQueryMachineMsg() {
+        if (serialPort != null) {
+            serialPort.sendQueryMachineMsg();
+        }
+    }
+
+    public void cleatTask() {
+        if (serialPort != null) {
+            serialPort.clearTask();
+        }
+    }
+
+
+    /**
+     * 发送出货消息
+     *
+     * @param t 出货处理类
+     */
+    public <T extends DeliverInfo> void sendDeliverMsg(T t) {
+        if (serialPort != null) {
+            sendReq.put(serialPort.sendDeliveryPacketMsg(t.machine, t.x, t.y), t);
+        }
+    }
+
+    public void sendClearAllSeqMsg() {
+        if (serialPort != null) {
+            serialPort.sendClearAllSeqMsg();
+        }
+    }
+
+    /**
+     * 回收
+     */
+    public void recycle() {
+        if (serialPort != null) {
+            serialPort.recycle();
+        }
+    }
+
+
+    public byte getMachinePortByNumber(String s) {
+        return serialPort.getMachinePortByNumber(s);
+    }
+
+    public boolean isExistMachineNumber(String s) {
+        return serialPort.isExistMachineNumber(s);
+    }
+
+    public int getMachineVersionByNumber(String s) {
+        return serialPort.getMachineVersionByNumber(s);
+    }
+
+    public interface DeliverDiSposeListener {
+        public void deliverListener(DeliverInfo deliverInfo, String seq, int result, int appendState, int x, int y);
+
+        public void queryMachine(Map<String, Byte> map);
+    }
+
+    public void setDeliverDiSposeListener(DeliverDiSposeListener deliverDiSposeListener) {
+        this.deliverDiSposeListener = deliverDiSposeListener;
+    }
+
+
+}
